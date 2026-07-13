@@ -1,0 +1,121 @@
+<Window x:Class="YoutubeDownloader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="YouTube Downloader" Height="760" Width="940" MinHeight="640" MinWidth="780"
+        Icon="YouTube.ico"
+        WindowStartupLocation="CenterScreen" Background="#0F0F0F" FontFamily="Segoe UI"
+        TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType">
+    <Window.Resources />
+
+    <Grid Margin="32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Шапка: красная иконка-плей + заголовок -->
+        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+            <Border Width="54" Height="54" CornerRadius="14" Background="#C4302B" HorizontalAlignment="Center">
+                <Path Data="{StaticResource PlayIcon}" Fill="White" Stretch="Uniform" Margin="16" />
+            </Border>
+            <StackPanel VerticalAlignment="Center" Margin="14,0,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="YouTube" FontSize="27" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text=" Downloader" FontSize="27" FontWeight="Bold" Foreground="#C4302B" />
+                </StackPanel>
+                <TextBlock Text="Скачивайте видео и аудио в выбранную папку" Margin="0,2,0,0" Foreground="#D0D0D0" FontSize="13" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Поле ссылки + Проверить -->
+        <Grid Grid.Row="1" Margin="0,26,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <TextBox x:Name="UrlTextBox" Height="52" Margin="0,0,10,0" Foreground="#FFFFFF" ToolTip="Вставьте ссылку на видео или плейлист" />
+            <Button x:Name="InfoButton" Grid.Column="1" Style="{StaticResource SecondaryButton}" Click="InfoButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource SearchIcon}" Fill="#F1F1F1" Stretch="Uniform" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <TextBlock Text="Проверить" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Карточка видео -->
+        <Border x:Name="VideoCard" Grid.Row="2" Style="{StaticResource YouTubeCard}" Margin="0,18,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="244" /><ColumnDefinition Width="20" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Border Height="138" CornerRadius="8" ClipToBounds="True" Background="#000000">
+                    <Grid>
+                        <Image x:Name="ThumbnailImage" Stretch="UniformToFill" />
+                        <Path Data="{StaticResource PlayIcon}" Fill="#88C4302B" Stretch="Uniform" Width="42" Height="42" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <TextBlock Text="СВЕДЕНИЯ О ВИДЕО" Foreground="#D0D0D0" FontSize="11" FontWeight="SemiBold" />
+                    <TextBlock x:Name="VideoTitleTextBlock" Text="Вставьте ссылку и нажмите «Проверить»" Margin="0,7,0,0" FontSize="18" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" />
+                    <TextBlock x:Name="VideoDetailsTextBlock" Text="Обложка и длительность появятся здесь." Margin="0,8,0,0" Foreground="#D0D0D0" TextWrapping="Wrap" FontSize="13" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Поле папки -->
+        <Grid Grid.Row="3" Margin="0,18,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <TextBox x:Name="FolderTextBox" Height="50" Margin="0,0,10,0" Foreground="#FFFFFF" />
+            <Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Click="ChooseFolder_Click">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource FolderIcon}" Fill="#F1F1F1" Stretch="Uniform" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <TextBlock Text="Папка" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Кнопки действий -->
+        <Grid Grid.Row="4" Margin="0,22,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <WrapPanel>
+                <Button x:Name="DownloadButton" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0" Click="DownloadButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource DownloadIcon}" Fill="White" Stretch="Uniform" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Скачать видео" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="AudioButton" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0" Click="AudioButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource MusicIcon}" Fill="#F1F1F1" Stretch="Uniform" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Скачать MP3" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="CancelButton" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0" IsEnabled="False" Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource StopIcon}" Fill="#F1F1F1" Stretch="Uniform" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Отменить" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="UpdateButton" Style="{StaticResource SecondaryButton}" Click="UpdateButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource RefreshIcon}" Fill="#F1F1F1" Stretch="Uniform" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Обновить yt-dlp" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
+
+            <!-- Статус + прогресс -->
+            <StackPanel Grid.Row="1" Margin="0,18,0,14">
+                <TextBlock x:Name="StatusTextBlock" Text="Готово к работе" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                <ProgressBar x:Name="ActivityProgressBar" Height="3" Margin="0,10,0,0" IsIndeterminate="True" Visibility="Collapsed" BorderThickness="0" Foreground="#C4302B" Background="#303030" />
+            </StackPanel>
+
+            <!-- Лог -->
+            <Border Style="{StaticResource YouTubeCard}" Grid.Row="2" Padding="0">
+                <TextBox x:Name="LogTextBox" IsReadOnly="True" Background="#0F0F0F" Foreground="#E8E8E8"
+                         BorderThickness="0" FontFamily="Cascadia Mono" FontSize="12" Padding="16,14"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap" />
+            </Border>
+        </Grid>
+
+        <TextBlock Grid.Row="5" Margin="0,16,0,0" Text="yt-dlp и FFmpeg хранятся локально в папке tools. Скачивайте только материалы, на которые у вас есть права."
+                   Foreground="#A8A8A8" FontSize="12" TextWrapping="Wrap" />
+    </Grid>
+</Window>
