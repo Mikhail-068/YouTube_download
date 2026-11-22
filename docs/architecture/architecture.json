@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Архитектура YouTube Downloader",
+    "quality_profile": "showcase",
+    "viewBox": [1120, 700],
+    "repository": {
+      "url": "https://github.com/Mikhail-068/YouTube_download",
+      "revision": "adf38296d9b8cd588f20ef1e07f24e960e98683a"
+    }
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Пользователь",
+      "sublabel": "URL и папка загрузки",
+      "pos": [36, 270],
+      "size": [150, 72]
+    },
+    {
+      "id": "wpfUi",
+      "type": "frontend",
+      "label": "WPF-интерфейс",
+      "sublabel": ".NET 8 для Windows",
+      "sources": [
+        { "path": "MainWindow.xaml", "label": "Разметка окна" },
+        { "path": "App.xaml", "label": "Стили приложения" }
+      ],
+      "pos": [230, 270],
+      "size": [170, 72]
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "Оркестратор",
+      "sublabel": "ProcessStartInfo и журнал",
+      "sources": [
+        { "path": "MainWindow.xaml.cs", "label": "Логика приложения" }
+      ],
+      "pos": [450, 270],
+      "size": [180, 72]
+    },
+    {
+      "id": "localTools",
+      "type": "backend",
+      "label": "Локальные инструменты",
+      "sublabel": "yt-dlp, Deno, FFmpeg",
+      "tag": "без cookies",
+      "sources": [
+        { "path": "scripts/Get-Dependencies.ps1", "label": "Получение инструментов" }
+      ],
+      "pos": [680, 270],
+      "size": [190, 72]
+    },
+    {
+      "id": "youtube",
+      "type": "cloud",
+      "label": "YouTube",
+      "sublabel": "Страница, API и медиапотоки",
+      "pos": [930, 150],
+      "size": [160, 72]
+    },
+    {
+      "id": "downloadFolder",
+      "type": "external",
+      "label": "Папка загрузки",
+      "sublabel": "Видео или MP3",
+      "pos": [930, 390],
+      "size": [160, 72]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Локальное приложение Windows",
+      "wraps": ["wpfUi", "orchestrator", "localTools"],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "userToUi",
+      "from": "user",
+      "to": "wpfUi",
+      "label": "ввод URL и команды",
+      "labelDy": 60,
+      "variant": "emphasis"
+    },
+    {
+      "id": "uiToOrchestrator",
+      "from": "wpfUi",
+      "to": "orchestrator",
+      "label": "события интерфейса",
+      "labelDy": -30
+    },
+    {
+      "id": "orchestratorToTools",
+      "from": "orchestrator",
+      "to": "localTools",
+      "label": "аргументы, stderr и JS runtime",
+      "labelDy": -30
+    },
+    {
+      "id": "toolsToYoutube",
+      "from": "localTools",
+      "to": "youtube",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "toolsToFolder",
+      "from": "localTools",
+      "to": "downloadFolder",
+      "label": "медиафайл",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Граница ответственности",
+      "items": [
+        "WPF управляет состоянием и отображает журнал",
+        "yt-dlp извлекает форматы, Deno решает JS-челленджи, FFmpeg объединяет потоки"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ключевое ограничение",
+      "items": [
+        "Доступность зависит от сети, DNS, API-клиентов и изменений YouTube",
+        "Инструменты в publish/tools обновляются отдельно от WPF-оболочки"
+      ]
+    }
+  ]
+}

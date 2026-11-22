@@ -1,28 +1,60 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 namespace YoutubeDownloader;
 
 public partial class MainWindow : Window
 {
+    private const int DwmUseImmersiveDarkMode = 20;
+    private const int DwmCaptionColor = 35;
+    private const int DwmTextColor = 36;
+
     private Process? _activeProcess;
+    private bool _cancelRequested;
     private static readonly HttpClient HttpClient = new();
     private readonly string _toolsDirectory;
     private readonly string _ytDlpPath;
+    private readonly string _denoPath;
 
     public MainWindow()
     {
         InitializeComponent();
         _toolsDirectory = Path.Combine(AppContext.BaseDirectory, "tools");
         _ytDlpPath = Path.Combine(_toolsDirectory, "yt-dlp.exe");
+        _denoPath = Path.Combine(_toolsDirectory, "deno.exe");
         FolderTextBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        if (SystemParameters.HighContrast)
+            return;
+
+        var handle = new WindowInteropHelper(this).Handle;
+        var enableDarkMode = 1;
+        _ = DwmSetWindowAttribute(handle, DwmUseImmersiveDarkMode, in enableDarkMode, sizeof(int));
+
+        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        {
+            // COLORREF encodes colors as 0x00BBGGRR.
+            var caption = 0x00221B18; // #181B22
+            var text = 0x00F2EEEE;    // #EEEEF2
+            _ = DwmSetWindowAttribute(handle, DwmCaptionColor, in caption, sizeof(int));
+            _ = DwmSetWindowAttribute(handle, DwmTextColor, in text, sizeof(int));
+        }
+    }
+
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, in int value, int valueSize);
 
     private void ChooseFolder_Click(object sender, RoutedEventArgs e)
     {
@@ -107,22 +139,107 @@ public partial class MainWindow : Window
     private async Task<string> RunAsync(IEnumerable<string> arguments, bool logOutput)
     {
         var startInfo = new ProcessStartInfo(_ytDlpPath) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true, WorkingDirectory = AppContext.BaseDirectory, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
+        foreach (var argument in new[]
+        {
+            "--retries", "10",
+            "--fragment-retries", "10",
+            "--extractor-retries", "10",
+            "--retry-sleep", "http:exp=1:10",
+            "--retry-sleep", "extractor:exp=1:10",
+            "--extractor-args", "youtube:player_client=default,web_embedded"
+        })
+            startInfo.ArgumentList.Add(argument);
+
+        if (File.Exists(_denoPath))
+        {
+            startInfo.ArgumentList.Add("--js-runtimes");
+            startInfo.ArgumentList.Add($"deno:{_denoPath}");
+        }
+        else
+        {
+            AppendLog("Предупреждение: tools\\deno.exe не найден. Некоторые видео YouTube могут быть недоступны.");
+        }
+
         foreach (var argument in arguments) startInfo.ArgumentList.Add(argument);
         using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+        _cancelRequested = false;
         _activeProcess = process;
         var stdout = new StringBuilder();
+        var stderr = new StringBuilder();
         process.OutputDataReceived += (_, e) => { if (e.Data is not null) { stdout.AppendLine(e.Data); if (logOutput) AppendLog(e.Data); } };
-        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) AppendLog(e.Data); };
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        await process.WaitForExitAsync();
-        _activeProcess = null;
-        if (process.ExitCode != 0) throw new InvalidOperationException($"yt-dlp завершился с кодом {process.ExitCode}. Подробности — в журнале.");
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (e.Data is null) return;
+            stderr.AppendLine(e.Data);
+            AppendLog(e.Data);
+        };
+
+        try
+        {
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            await process.WaitForExitAsync();
+        }
+        finally
+        {
+            _activeProcess = null;
+        }
+
+        if (_cancelRequested)
+            throw new OperationCanceledException();
+
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException(CreateYtDlpErrorMessage(process.ExitCode, stderr.ToString()));
+
         return stdout.ToString();
     }
 
-    private void CancelButton_Click(object sender, RoutedEventArgs e) => _activeProcess?.Kill(entireProcessTree: true);
+    private void CancelButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_activeProcess is not { HasExited: false } process) return;
+
+        try
+        {
+            process.Kill(entireProcessTree: true);
+            _cancelRequested = true;
+            AppendLog("Отмена по запросу пользователя…");
+        }
+        catch (InvalidOperationException)
+        {
+            // Процесс успел завершиться между проверкой HasExited и вызовом Kill.
+        }
+    }
+
+    private static string CreateYtDlpErrorMessage(int exitCode, string errorOutput)
+    {
+        var errorLines = errorOutput
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line => line.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var detail = errorLines.LastOrDefault();
+
+        if (errorOutput.Contains("Failed to resolve", StringComparison.OrdinalIgnoreCase) ||
+            errorOutput.Contains("getaddrinfo failed", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Не удалось найти адрес YouTube через DNS. Проверьте подключение к интернету и повторите попытку. " +
+                   "Приложение уже выполнило 10 повторов соединения.";
+        }
+
+        if (errorOutput.Contains("timed out", StringComparison.OrdinalIgnoreCase))
+            return "YouTube не ответил вовремя. Проверьте подключение к интернету и повторите попытку.";
+
+        if (errorOutput.Contains("sign in", StringComparison.OrdinalIgnoreCase))
+            return "YouTube разрешает доступ к этому видео только после входа в аккаунт. Приложение не использует cookies браузера автоматически.";
+
+        if (errorOutput.Contains("video is not available", StringComparison.OrdinalIgnoreCase) ||
+            errorOutput.Contains("video unavailable", StringComparison.OrdinalIgnoreCase))
+            return "YouTube не предоставил доступ к этому видео ни через основной, ни через встроенный проигрыватель. Возможно, видео удалено или ограничено владельцем, возрастом либо регионом.";
+
+        return string.IsNullOrWhiteSpace(detail)
+            ? $"yt-dlp завершился с кодом {exitCode}. Подробности сохранены в журнале."
+            : detail;
+    }
 
     private string? GetUrl()
     {

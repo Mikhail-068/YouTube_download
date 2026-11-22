@@ -10,6 +10,13 @@
             <SolidColorBrush x:Key="SurfaceBrush" Color="#212121" />
             <SolidColorBrush x:Key="CardBrush" Color="#272727" />
             <SolidColorBrush x:Key="InputBorderBrush" Color="#303030" />
+            <LinearGradientBrush x:Key="SilverEdgeBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#A3AAB5" Offset="0" />
+                <GradientStop Color="#686F7B" Offset="0.62" />
+                <GradientStop Color="#8B929D" Offset="1" />
+            </LinearGradientBrush>
+            <Thickness x:Key="SilverEdgeThickness">0.5</Thickness>
+            <CornerRadius x:Key="PanelCornerRadius">12</CornerRadius>
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="#E0E0E0" />
             <SolidColorBrush x:Key="TextMutedBrush" Color="#B8B8B8" />
@@ -25,8 +32,6 @@
             <Geometry x:Key="MusicIcon">M12 3v10.55c-.59-.34-1.27-.55-2-.55a4 4 0 1 0 4 4V7h4V3h-6z</Geometry>
             <Geometry x:Key="StopIcon">M6 6h12v12H6z</Geometry>
             <Geometry x:Key="RefreshIcon">M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.74 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z</Geometry>
-            <Geometry x:Key="SearchIcon">M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19l-5-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z</Geometry>
-            <Geometry x:Key="FolderIcon">M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z</Geometry>
 
             <!-- ===== Текстовое поле (как поиск YouTube) ===== -->
             <Style TargetType="TextBox">
@@ -51,67 +56,97 @@
                 </Style.Triggers>
             </Style>
 
-            <!-- ===== Кнопка (общий шаблон YouTube) ===== -->
-            <Style x:Key="YouTubeButton" TargetType="Button">
-                <Setter Property="Foreground" Value="#F1F1F1" />
-                <Setter Property="BorderThickness" Value="0" />
+            <Style x:Key="SilverInputField" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                <Setter Property="BorderBrush" Value="{StaticResource SilverEdgeBrush}" />
+                <Setter Property="BorderThickness" Value="{StaticResource SilverEdgeThickness}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="FieldFrame" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{StaticResource PanelCornerRadius}">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="#D3DAE4" />
+                        <Setter Property="BorderThickness" Value="{StaticResource SilverEdgeThickness}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="GlossyButton" TargetType="Button">
+                <Setter Property="Foreground" Value="White" />
                 <Setter Property="Padding" Value="18,11" />
                 <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="root" RenderTransformOrigin="0.5,0.5">
+                            <Grid x:Name="Chrome" SnapsToDevicePixels="True">
                                 <Grid.RenderTransform>
-                                    <ScaleTransform x:Name="scale" ScaleX="1" ScaleY="1" />
+                                    <TranslateTransform />
                                 </Grid.RenderTransform>
-                                <Border x:Name="bd"
-                                        CornerRadius="18"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        Background="{TemplateBinding Background}" />
+                                <Border x:Name="Face" CornerRadius="32" Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="{Binding Path=BorderBrush.Color, RelativeSource={RelativeSource TemplatedParent}}"
+                                                          ShadowDepth="2" Direction="270" BlurRadius="12" Opacity="0.36" />
+                                    </Border.Effect>
+                                </Border>
+                                <Border x:Name="Gloss" Margin="2,2,2,4" CornerRadius="30"
+                                        Opacity="0.86" IsHitTestVisible="False">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#63FFFFFF" Offset="0" />
+                                            <GradientStop Color="#14FFFFFF" Offset="0.36" />
+                                            <GradientStop Color="#00FFFFFF" Offset="0.55" />
+                                            <GradientStop Color="#30000000" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+                                <Border Margin="3,2,3,4" CornerRadius="30" BorderThickness="1"
+                                        IsHitTestVisible="False">
+                                    <Border.BorderBrush>
+                                        <LinearGradientBrush StartPoint="0,0.1" EndPoint="1,0.9">
+                                            <GradientStop Color="#3EFFFFFF" Offset="0" />
+                                            <GradientStop Color="#EAFFFFFF" Offset="0.23" />
+                                            <GradientStop Color="#78FFFFFF" Offset="0.47" />
+                                            <GradientStop Color="#35FFFFFF" Offset="0.79" />
+                                            <GradientStop Color="#56FFFFFF" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.BorderBrush>
+                                </Border>
+                                <Border x:Name="FocusRing" Margin="-3" CornerRadius="35" BorderThickness="2"
+                                        BorderBrush="#F5F8FF" Visibility="Collapsed" IsHitTestVisible="False" />
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                  Margin="{TemplateBinding Padding}" IsHitTestVisible="False" />
+                                                  Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
+                                                  IsHitTestVisible="False" />
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleX" To="1.03" Duration="0:0:0.1" />
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleY" To="1.03" Duration="0:0:0.1" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.12" />
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.12" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
+                                    <Setter TargetName="Gloss" Property="Opacity" Value="1" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleX" To="0.97" Duration="0:0:0.06" />
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleY" To="0.97" Duration="0:0:0.06" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleX" To="1.03" Duration="0:0:0.1" />
-                                                <DoubleAnimation Storyboard.TargetName="scale" Storyboard.TargetProperty="ScaleY" To="1.03" Duration="0:0:0.1" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
+                                    <Setter TargetName="Gloss" Property="Opacity" Value="0.4" />
+                                    <Setter TargetName="Chrome" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <TranslateTransform Y="1" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Opacity" Value="0.4" />
+                                    <Setter TargetName="Chrome" Property="Opacity" Value="0.5" />
+                                    <Setter TargetName="Face" Property="Effect" Value="{x:Null}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -119,27 +154,148 @@
                 </Setter>
             </Style>
 
-            <!-- Главная кнопка: фирменный красный YouTube -->
-            <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource YouTubeButton}">
-                <Setter Property="Background" Value="#C4302B" />
-                <Setter Property="Foreground" Value="White" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#9E2620" />
-                    </Trigger>
-                </Style.Triggers>
+            <Style x:Key="CheckButtonStyle" TargetType="Button" BasedOn="{StaticResource GlossyButton}">
+                <Setter Property="Width" Value="113" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="#FFE5A2" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="CheckChrome" Background="Transparent" SnapsToDevicePixels="True">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" IsHitTestVisible="False">
+                                    <Viewbox Width="34" Height="34">
+                                        <Canvas Width="46" Height="46">
+                                            <Path x:Name="MagnifierOutline"
+                                                  Data="M34.5,18.5 A15.5,15.5 0 1 1 3.5,18.5 A15.5,15.5 0 1 1 34.5,18.5 Z
+                                                        M30.8,28.5 L35.8,33.5 M28.9,30.4 L33.9,35.4
+                                                        M33,36.3 L37,32.3 L43.8,39.1 Q46.5,41.8 44.5,43.8 Q42.5,45.8 39.8,43.1 Z"
+                                                  Stroke="#F5CD54" StrokeThickness="1.25" StrokeLineJoin="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                    <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                               VerticalAlignment="Center" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="MagnifierOutline" Property="Stroke" Value="#FFE5A2" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="MagnifierOutline" Property="Opacity" Value="0.75" />
+                                    <Setter TargetName="CheckChrome" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <TranslateTransform Y="1" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="MagnifierOutline" Property="Stroke" Value="#FFF6DF" />
+                                    <Setter TargetName="MagnifierOutline" Property="StrokeThickness" Value="2" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="CheckChrome" Property="Opacity" Value="0.5" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
-            <!-- Вторичная кнопка: тёмная пилюля (как на YouTube) -->
-            <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource YouTubeButton}">
-                <Setter Property="Background" Value="#272727" />
-                <Setter Property="Foreground" Value="#F1F1F1" />
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#3F3F3F" />
-                    </Trigger>
-                </Style.Triggers>
+            <Style x:Key="FolderButtonStyle" TargetType="Button" BasedOn="{StaticResource GlossyButton}">
+                <Setter Property="Width" Value="74" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="FolderChrome" Background="Transparent" SnapsToDevicePixels="True">
+                                <Viewbox IsHitTestVisible="False">
+                                    <Canvas Width="94" Height="50">
+                                        <Path x:Name="FolderOutline"
+                                              Data="M17,43 V9 Q17,3 23,3 H34 Q37,3 39,5 L44,9 H65 Q72,9 72,15 V16 H75 Q80,16 78,22 L73,43 Q72,47 68,47 H22 Q17,47 17,43 Z
+                                                    M17,43 L23,20 Q24,16 29,16 H72"
+                                              Stroke="#F5CD54" StrokeThickness="1.25" StrokeLineJoin="Round" />
+                                    </Canvas>
+                                </Viewbox>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="FolderOutline" Property="Stroke" Value="#FFE5A2" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="FolderOutline" Property="Opacity" Value="0.75" />
+                                    <Setter TargetName="FolderChrome" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <TranslateTransform Y="1" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="FolderOutline" Property="Stroke" Value="#FFF6DF" />
+                                    <Setter TargetName="FolderOutline" Property="StrokeThickness" Value="2" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="FolderChrome" Property="Opacity" Value="0.5" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="VideoButtonStyle" TargetType="Button" BasedOn="{StaticResource GlossyButton}">
+                <Setter Property="BorderBrush" Value="#FF5B2D" />
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <GradientStop Color="#A32113" Offset="0" />
+                            <GradientStop Color="#CF420B" Offset="0.45" />
+                            <GradientStop Color="#A11914" Offset="1" />
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="AudioButtonStyle" TargetType="Button" BasedOn="{StaticResource GlossyButton}">
+                <Setter Property="BorderBrush" Value="#A76AFF" />
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <GradientStop Color="#4B11A5" Offset="0" />
+                            <GradientStop Color="#7827CB" Offset="0.45" />
+                            <GradientStop Color="#440C9C" Offset="1" />
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="CancelButtonStyle" TargetType="Button" BasedOn="{StaticResource GlossyButton}">
+                <Setter Property="BorderBrush" Value="#777985" />
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <GradientStop Color="#202026" Offset="0" />
+                            <GradientStop Color="#43434D" Offset="0.45" />
+                            <GradientStop Color="#1E1E25" Offset="1" />
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="UpdateButtonStyle" TargetType="Button" BasedOn="{StaticResource GlossyButton}">
+                <Setter Property="BorderBrush" Value="#38B662" />
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <GradientStop Color="#0C4B29" Offset="0" />
+                            <GradientStop Color="#11733C" Offset="0.45" />
+                            <GradientStop Color="#0C462D" Offset="1" />
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- ===== Карточка (как surface YouTube) ===== -->
@@ -147,7 +303,7 @@
                 <Setter Property="Background" Value="#212121" />
                 <Setter Property="BorderBrush" Value="#303030" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="CornerRadius" Value="{StaticResource PanelCornerRadius}" />
                 <Setter Property="Padding" Value="18" />
             </Style>
         </ResourceDictionary>

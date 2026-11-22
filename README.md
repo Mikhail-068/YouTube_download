@@ -25,7 +25,8 @@
 - 📝 **Живой лог** процесса в реальном времени
 - ⏹️ **Отмена** загрузки в любой момент
 - 🎨 **Тёмная тема** в фирменном стиле YouTube, с анимациями и иконками
-- 🔒 **Локальная работа** — yt-dlp и FFmpeg лежат в папке `tools`, ничего не «улетает» наружу
+- 🧩 **Современные YouTube-челленджи** — локальный Deno помогает yt-dlp получать форматы без cookies браузера
+- 🔒 **Локальная работа** — yt-dlp, Deno и FFmpeg лежат в папке `tools`; аккаунт YouTube не используется
 
 ---
 
@@ -37,7 +38,7 @@
 
 ## 🚀 Быстрый старт
 
-### 1. Установите зависимости (yt-dlp + FFmpeg)
+### 1. Установите зависимости (yt-dlp + Deno + FFmpeg)
 
 В PowerShell из папки проекта:
 
@@ -47,6 +48,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Get-Dependencies.ps1
 
 Скрипт скачает в папку `tools`:
 - `yt-dlp.exe`
+- `deno.exe`
 - `ffmpeg.exe`
 - `ffprobe.exe`
 
@@ -84,6 +86,7 @@ dotnet publish -c Release -r win-x64 --self-contained false -o publish
 |-----------|-----------|
 | [.NET 8](https://dotnet.microsoft.com/) + WPF | Графический интерфейс (XAML) |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Движок загрузки |
+| [Deno](https://deno.com/) | Выполнение JavaScript-челленджей YouTube |
 | [FFmpeg](https://ffmpeg.org/) | Конвертация и мультиплексирование |
 | `ProcessStartInfo.ArgumentList` | Безопасная передача аргументов |
 
@@ -99,8 +102,8 @@ YoutubeDownloader/
 ├── MainWindow.xaml       # Вёрстка интерфейса
 ├── MainWindow.xaml.cs    # Логика взаимодействия с yt-dlp
 ├── scripts/
-│   └── Get-Dependencies.ps1   # Загрузка yt-dlp + FFmpeg
-├── tools/                # Бинарники (yt-dlp.exe, ffmpeg.exe, ffprobe.exe)
+│   └── Get-Dependencies.ps1   # Загрузка yt-dlp, Deno и FFmpeg
+├── tools/                # Бинарники (yt-dlp.exe, deno.exe, ffmpeg.exe, ffprobe.exe)
 └── YoutubeDownloader.csproj
 ```
 
