@@ -7,8 +7,20 @@
   <img src="https://img.shields.io/badge/Windows-x64-2563eb" alt="Windows x64">
   <img src="https://img.shields.io/badge/WPF-.NET%208-7842db" alt="WPF на .NET 8">
   <img src="https://img.shields.io/badge/YouTube-%D0%B2%D0%B8%D0%B4%D0%B5%D0%BE%20%2B%20MP3-ff0033" alt="Видео и MP3">
-  <p><a href="#как-пользоваться">Как пользоваться</a> · <a href="#сборка-для-windows">Сборка для Windows</a> · <a href="#если-загрузка-не-удалась">Помощь с загрузкой</a></p>
+  <p><a href="#установка-на-windows">Установка на Windows</a> · <a href="#как-пользоваться">Как пользоваться</a> · <a href="#сборка-для-windows">Сборка для Windows</a> · <a href="#если-загрузка-не-удалась">Помощь с загрузкой</a></p>
 </div>
+
+## Установка на Windows
+
+Для **Windows 10 и 11 (x64)** используйте готовый установщик **`YoutubeDownloader-Setup-x64.exe`**.
+
+1. Перенесите `YoutubeDownloader-Setup-x64.exe` на новый ПК.
+2. Запустите установщик и пройдите шаги мастера. При установке в папку по умолчанию права администратора не нужны.
+3. Откройте **YouTube Downloader** через меню «Пуск».
+
+В комплект уже входят .NET, yt-dlp, Deno и FFmpeg. Для установки интернет не нужен, он понадобится при проверке ссылки и скачивании видео.
+
+Сборка установщика есть в локальной папке `publish` проекта. В GitHub Releases файл пока не выложен.
 
 ## Как пользоваться
 
@@ -23,7 +35,10 @@
 
 ## Сборка для Windows
 
-Готового установщика в GitHub Releases пока нет. Для сборки понадобятся Windows x64, Git и [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0). Откройте PowerShell, подключитесь к интернету и выполните команды.
+<details>
+<summary>Команды сборки из исходников</summary>
+
+Для сборки понадобятся Windows x64, Git и [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0). Откройте PowerShell, подключитесь к интернету и выполните команды.
 
 ```powershell
 git clone https://github.com/Mikhail-068/YouTube_download.git
@@ -38,6 +53,8 @@ Copy-Item .\tools\*.exe -Destination .\publish\tools -Force
 ```
 
 Приложение находится в `publish` и запускается с включённой в сборку .NET. При переносе на другой компьютер скопируйте вместе с EXE папку `tools` с файлами `yt-dlp.exe`, `deno.exe`, `ffmpeg.exe` и `ffprobe.exe`.
+
+</details>
 
 ## Если загрузка не удалась
 
