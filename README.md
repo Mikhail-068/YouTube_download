@@ -1,132 +1,61 @@
+<h1 align="center">
+  <img src="docs/banner.png" alt="YouTube Downloader" width="960">
+</h1>
+
 <div align="center">
-
-# 🎬 YouTube Downloader
-
-**Лёгкая WPF-оболочка над [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) для Windows**
-
-Скачивайте видео и аудио в выбранную папку — без рекламы, без аккаунтов, без сторонних .NET-обёрток.
-
-![Platform](https://img.shields.io/badge/platform-Windows-blue?logo=windows)
-![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
-![WPF](https://img.shields.io/badge/WPF-XAML-512BD4)
-![License](https://img.shields.io/badge/use-personal-green)
-
+  <p>Скачивайте видео с YouTube или сохраняйте только звук в MP3.</p>
+  <img src="https://img.shields.io/badge/Windows-x64-2563eb" alt="Windows x64">
+  <img src="https://img.shields.io/badge/WPF-.NET%208-7842db" alt="WPF на .NET 8">
+  <img src="https://img.shields.io/badge/YouTube-%D0%B2%D0%B8%D0%B4%D0%B5%D0%BE%20%2B%20MP3-ff0033" alt="Видео и MP3">
+  <p><a href="#как-пользоваться">Как пользоваться</a> · <a href="#сборка-для-windows">Сборка для Windows</a> · <a href="#если-загрузка-не-удалась">Помощь с загрузкой</a></p>
 </div>
 
----
+## Как пользоваться
 
-## ✨ Возможности
+1. Вставьте ссылку на ролик и нажмите **«Проверить»**. В карточке появятся название, обложка, канал и длительность, если они доступны.
+2. Нажмите жёлтый значок папки и выберите, куда сохранить файл.
+3. Нажмите **«Скачать видео»**, чтобы сохранить ролик, или **«Скачать MP3»**, чтобы получить звуковую дорожку.
+4. Следите за ходом загрузки в журнале под кнопками. Активную операцию можно прервать кнопкой **«Отменить»**.
 
-- 🎥 **Скачивание видео** в лучшем качестве (`bv*+ba/b`)
-- 🎵 **Извлечение аудио** в MP3 одним кликом
-- 🖼️ **Предпросмотр** — обложка, название, канал, длительность до загрузки
-- 📁 **Выбор папки** назначения через системный диалог
-- 🔄 **Автообновление** yt-dlp до nightly-канала прямо из приложения
-- 📝 **Живой лог** процесса в реальном времени
-- ⏹️ **Отмена** загрузки в любой момент
-- 🎨 **Тёмная тема** в фирменном стиле YouTube, с анимациями и иконками
-- 🧩 **Современные YouTube-челленджи** — локальный Deno помогает yt-dlp получать форматы без cookies браузера
-- 🔒 **Локальная работа** — yt-dlp, Deno и FFmpeg лежат в папке `tools`; аккаунт YouTube не используется
+<p align="center">
+  <img src="docs/screen.png" alt="Окно YouTube Downloader с карточкой видео, выбором папки и кнопками скачивания видео и MP3" width="840">
+</p>
 
----
+## Сборка для Windows
 
-## 📸 Скриншот
-
-![Скриншот приложения](docs/screen.png)
-
----
-
-## 🚀 Быстрый старт
-
-### 1. Установите зависимости (yt-dlp + Deno + FFmpeg)
-
-В PowerShell из папки проекта:
+Готового установщика в GitHub Releases пока нет. Для сборки понадобятся Windows x64, Git и [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0). Откройте PowerShell, подключитесь к интернету и выполните команды.
 
 ```powershell
+git clone https://github.com/Mikhail-068/YouTube_download.git
+Set-Location YouTube_download
+
 powershell -ExecutionPolicy Bypass -File .\scripts\Get-Dependencies.ps1
-```
+dotnet publish .\YoutubeDownloader.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\publish
 
-Скрипт скачает в папку `tools`:
-- `yt-dlp.exe`
-- `deno.exe`
-- `ffmpeg.exe`
-- `ffprobe.exe`
-
-### 2. Соберите приложение
-
-```bash
-dotnet publish -c Release -r win-x64 --self-contained false -o publish
-```
-
-### 3. Запустите
-
-```bash
+New-Item -ItemType Directory -Path .\publish\tools -Force | Out-Null
+Copy-Item .\tools\*.exe -Destination .\publish\tools -Force
 .\publish\YoutubeDownloader.exe
 ```
 
-> 💡 Убедитесь, что каталог `tools` с бинарниками лежит рядом с `YoutubeDownloader.exe`.
+Приложение находится в `publish` и запускается с включённой в сборку .NET. При переносе на другой компьютер скопируйте вместе с EXE папку `tools` с файлами `yt-dlp.exe`, `deno.exe`, `ffmpeg.exe` и `ffprobe.exe`.
 
----
+## Если загрузка не удалась
 
-## 🎯 Как пользоваться
+- Если ролик доступен в браузере, нажмите **«Обновить yt-dlp»**, дождитесь завершения и повторите попытку. Кнопка устанавливает свежую сборку из канала nightly.
+- Если приложение не находит утилиты, проверьте папку `tools` рядом с EXE. Команда скачивания утилит приведена в разделе сборки.
+- Если ошибка повторяется, загляните в журнал внизу окна. В нём выводятся сообщения yt-dlp во время загрузки.
 
-1. Вставьте ссылку на видео или плейлист YouTube в верхнее поле.
-2. Нажмите **«Проверить»** — появится обложка, название и длительность.
-3. Выберите папку сохранения кнопкой **«Папка»**.
-4. Нажмите:
-   - **«Скачать видео»** — для видео в лучшем качестве
-   - **«Скачать MP3»** — для извлечения аудио
-5. Следите за прогрессом в журнале. Кнопка **«Отменить»** прервёт загрузку.
+## Как устроено приложение
 
----
+| Компонент | Что делает |
+| --- | --- |
+| WPF и .NET 8 | Показывают окно, карточку видео и журнал |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Получает сведения о ролике и скачивает медиа |
+| [Deno](https://deno.com/) | Выполняет JavaScript, который требуется yt-dlp для обработки ссылок YouTube |
+| [FFmpeg и FFprobe](https://ffmpeg.org/) | Обрабатывают медиапотоки, в том числе при сохранении звука в MP3 |
 
-## 🛠️ Технологии
+Подробности есть в [описании архитектуры](docs/architecture/README.md). Сборка установщика описана в [сценарии NSIS](installer/YoutubeDownloader.nsi).
 
-| Компонент | Назначение |
-|-----------|-----------|
-| [.NET 8](https://dotnet.microsoft.com/) + WPF | Графический интерфейс (XAML) |
-| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Движок загрузки |
-| [Deno](https://deno.com/) | Выполнение JavaScript-челленджей YouTube |
-| [FFmpeg](https://ffmpeg.org/) | Конвертация и мультиплексирование |
-| `ProcessStartInfo.ArgumentList` | Безопасная передача аргументов |
+Скачивайте материалы, на которые у вас есть права, и соблюдайте [условия использования YouTube](https://www.youtube.com/t/terms).
 
-Приложение **не содержит** ключей API и **не использует** сторонние .NET-обёртки над yt-dlp — только прямой запуск процесса.
-
----
-
-## 📁 Структура проекта
-
-```
-YoutubeDownloader/
-├── App.xaml              # Стили, палитра, шаблоны (тёмная тема YouTube)
-├── MainWindow.xaml       # Вёрстка интерфейса
-├── MainWindow.xaml.cs    # Логика взаимодействия с yt-dlp
-├── scripts/
-│   └── Get-Dependencies.ps1   # Загрузка yt-dlp, Deno и FFmpeg
-├── tools/                # Бинарники (yt-dlp.exe, deno.exe, ffmpeg.exe, ffprobe.exe)
-└── YoutubeDownloader.csproj
-```
-
----
-
-## ⚖️ Использование и ответственность
-
-Эта программа — лишь графическая оболочка над свободным инструментом `yt-dlp`.
-
-- Скачивайте **только** те материалы, на которые у вас есть права (свободные лицензии, собственный контент, общественное достояние).
-- Соблюдайте [Условия использования YouTube](https://www.youtube.com/t/terms) и авторское право вашей юрисдикции.
-- Автор приложения не несёт ответственности за неправомерное использование.
-
----
-
-## 🔄 Обновление yt-dlp
-
-YouTube регулярно меняет внутренние форматы, из-за чего yt-dlp иногда перестаёт работать. В приложении есть кнопка **«Обновить yt-dlp»** — она переключается на **nightly-канал**, который yt-dlp рекомендует при поломках.
-
----
-
-<div align="center">
-
-**Сделано с ❤️ для личного использования**
-
-</div>
+Автор проекта — [Mikhail-068](https://github.com/Mikhail-068).
