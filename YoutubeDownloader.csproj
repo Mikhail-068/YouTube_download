@@ -10,7 +10,7 @@
     <Optimize>true</Optimize>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <AssemblyName>YoutubeDownloader</AssemblyName>
-    <Version>1.0.15</Version>
+    <Version>1.0.16</Version>
     <ApplicationIcon>YouTube.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
@@ -18,5 +18,6 @@
     <Resource Include="YouTube.ico" />
     <Resource Include="Assets/WindowBackground.png" />
     <Resource Include="Assets/VideoCardLeather.png" />
+    <Resource Include="Assets/YouTubeMark.png" />
   </ItemGroup>
 </Project>
