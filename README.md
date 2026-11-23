@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Windows-x64-2563eb" alt="Windows x64">
   <img src="https://img.shields.io/badge/WPF-.NET%208-7842db" alt="WPF на .NET 8">
   <img src="https://img.shields.io/badge/YouTube-%D0%B2%D0%B8%D0%B4%D0%B5%D0%BE%20%2B%20MP3-ff0033" alt="Видео и MP3">
-  <p><a href="#установка-на-windows">Установка на Windows</a> · <a href="#как-пользоваться">Как пользоваться</a> · <a href="#сборка-для-windows">Сборка для Windows</a> · <a href="#если-загрузка-не-удалась">Помощь с загрузкой</a></p>
+  <p><a href="#установка-на-windows">Установка на Windows</a> · <a href="#как-пользоваться">Как пользоваться</a> · <a href="#сессия-youtube">Сессия YouTube</a> · <a href="#сборка-для-windows">Сборка для Windows</a> · <a href="#если-загрузка-не-удалась">Помощь с загрузкой</a></p>
 </div>
 
 ## Установка на Windows
@@ -32,6 +32,51 @@
 <p align="center">
   <img src="docs/screen.png" alt="Окно YouTube Downloader с карточкой видео, выбором папки и кнопками скачивания видео и MP3" width="840">
 </p>
+
+## Сессия YouTube
+
+Если YouTube просит войти, подключите в загрузчике сессию браузера, в котором открывается ролик. Она используется при проверке HTTPS-ссылок YouTube и скачивании видео или MP3.
+
+> [!NOTE]
+> Для этой функции используйте переносимый `publish/YoutubeDownloader.exe` версии **1.0.20** или [соберите приложение из исходников](#сборка-для-windows). Локальный установщик **1.0.16** выпущен до появления меню сессии.
+
+### 🌐 Google Chrome через файл cookies
+
+1. Откройте ролик на YouTube в Chrome и убедитесь, что вошли под нужным Google-аккаунтом.
+2. Установите **Get cookies.txt LOCALLY** и откройте его на вкладке ролика. В поле **Export Format** выберите **Netscape** и нажмите **Export**, чтобы сохранить cookies текущего сайта. [Страница расширения в Chrome Web Store](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+3. В загрузчике откройте **«Сессия YouTube» → «Выбрать файл cookies.txt…»** и укажите сохранённый файл. Chrome может назвать его `www.youtube.com_cookies.txt`.
+4. Когда появится **«Файл сессии подключён»**, вставьте ссылку и нажмите **«Проверить»**. Если карточка показала сведения о ролике, можно нажать **«Скачать видео»** или **«Скачать MP3»**.
+
+<p align="center">
+  <img src="docs/youtube-session.png" alt="Шапка YouTube Downloader с надписью «Файл сессии подключён» и кнопкой «Сессия YouTube» справа" width="840">
+</p>
+
+### 🔗 Как используется файл
+
+```mermaid
+flowchart LR
+    Chrome["Chrome<br/>Вход на YouTube"] --> File["Файл cookies<br/>Формат Netscape"]
+    File --> App["YouTube Downloader<br/>Импорт файла"]
+    App --> YouTube["YouTube<br/>Запрос через yt-dlp"]
+    classDef browser fill:#303C72,stroke:#8DABFF,color:#FFFFFF
+    classDef exportFile fill:#50361D,stroke:#F5BA58,color:#FFFFFF
+    classDef downloader fill:#433167,stroke:#B8A0F2,color:#FFFFFF
+    classDef service fill:#643138,stroke:#F9949A,color:#FFFFFF
+    class Chrome browser
+    class File exportFile
+    class App downloader
+    class YouTube service
+    linkStyle default stroke:#828CA3,stroke-width:1.75px
+```
+
+Загрузчик передаёт `yt-dlp` временную копию с записями только для домена YouTube. После завершения или отмены операции копия удаляется. Чтобы завершить использование файла, нажмите **«Отключить сессию»** или закройте окно. При следующем запуске файл можно выбрать заново. [Подробнее в документации yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies)
+
+> [!IMPORTANT]
+> Файл cookies даёт доступ к вашей сессии. Храните его локально. Не отправляйте его в чат и не добавляйте в репозиторий.
+
+### 🦊 Подключение профиля браузера
+
+В Firefox можно войти на YouTube и затем выбрать **«Сессия YouTube» → Firefox → ваш профиль**. Приложение запомнит этот выбор. В меню также доступны Chrome и Edge. При ошибке чтения cookies из Chrome или Edge выберите **«Выбрать файл cookies.txt…»**.
 
 ## Сборка для Windows
 
@@ -59,6 +104,7 @@ Copy-Item .\tools\*.exe -Destination .\publish\tools -Force
 ## Если загрузка не удалась
 
 - Если ролик доступен в браузере, нажмите **«Обновить yt-dlp»**, дождитесь завершения и повторите попытку. Кнопка устанавливает свежую сборку из канала nightly.
+- Если YouTube просит войти или сообщает, что сессию браузера прочитать не удалось, откройте раздел [«Сессия YouTube»](#сессия-youtube). Если ранее подключённый файл перестал работать, войдите на YouTube в браузере и экспортируйте свежий файл.
 - Если приложение не находит утилиты, проверьте папку `tools` рядом с EXE. Команда скачивания утилит приведена в разделе сборки.
 - Если ошибка повторяется, загляните в журнал внизу окна. В нём выводятся сообщения yt-dlp во время загрузки.
 

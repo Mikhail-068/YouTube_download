@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -5,9 +6,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
-using System.Windows.Forms;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
+using FolderBrowserDialog = System.Windows.Forms.FolderBrowserDialog;
 
 namespace YoutubeDownloader;
 
@@ -19,6 +22,10 @@ public partial class MainWindow : Window
 
     private Process? _activeProcess;
     private bool _cancelRequested;
+    private bool _usingYoutubeSession;
+    private bool _closeRequested;
+    private string? _youtubeCookiesPath;
+    private BrowserSession? _browserSession;
     private static readonly HttpClient HttpClient = new();
     private readonly string _toolsDirectory;
     private readonly string _ytDlpPath;
@@ -31,6 +38,8 @@ public partial class MainWindow : Window
         _ytDlpPath = Path.Combine(_toolsDirectory, "yt-dlp.exe");
         _denoPath = Path.Combine(_toolsDirectory, "deno.exe");
         FolderTextBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        _browserSession = BrowserSession.Load(BrowserSession.SettingsPath);
+        UpdateSessionStatus();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -63,6 +72,112 @@ public partial class MainWindow : Window
             FolderTextBox.Text = dialog.SelectedPath;
     }
 
+    private void SessionButton_Click(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = SessionButton, Placement = PlacementMode.Bottom };
+        if (!SystemParameters.HighContrast)
+            menu.Style = (Style)FindResource("SessionContextMenu");
+
+        foreach (var browser in BrowserSession.Browsers)
+        {
+            var browserMenu = new MenuItem { Header = browser.Name };
+            var root = BrowserSession.GetProfileRoot(browser.Id);
+            var profiles = BrowserSession.FindProfiles(browser.Id, root);
+            foreach (var profile in profiles)
+            {
+                var session = new BrowserSession(browser.Id, profile.Path);
+                var item = new MenuItem
+                {
+                    Header = profile.Name.Replace("_", "__", StringComparison.Ordinal),
+                    ToolTip = $"{profile.Name}\n{Path.GetFileName(profile.Path)}",
+                    IsCheckable = true,
+                    IsChecked = session == _browserSession
+                };
+                item.Click += (_, _) => SelectSession(session, null);
+                browserMenu.Items.Add(item);
+            }
+            if (profiles.Count > 0) browserMenu.Items.Add(new Separator());
+            var browse = new MenuItem { Header = "Выбрать папку профиля…" };
+            browse.Click += (_, _) => ChooseBrowserProfile(browser.Id, root);
+            browserMenu.Items.Add(browse);
+            menu.Items.Add(browserMenu);
+        }
+
+        menu.Items.Add(new Separator());
+        var file = new MenuItem { Header = "Выбрать файл cookies.txt…" };
+        file.Click += (_, _) => ChooseCookieFile();
+        menu.Items.Add(file);
+
+        var disconnect = new MenuItem
+        {
+            Header = "Отключить сессию",
+            IsEnabled = _browserSession is not null || _youtubeCookiesPath is not null
+        };
+        disconnect.Click += (_, _) => SelectSession(null, null);
+        menu.Items.Add(disconnect);
+        menu.IsOpen = true;
+    }
+
+    private void ChooseBrowserProfile(string browser, string root)
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog { Title = "Выберите папку профиля браузера" };
+        if (Directory.Exists(root)) dialog.InitialDirectory = root;
+        if (dialog.ShowDialog(this) != true) return;
+
+        if (BrowserSession.IsProfile(browser, dialog.FolderName))
+            SelectSession(new BrowserSession(browser, dialog.FolderName), null);
+        else
+            ShowError("Выберите папку профиля, в котором вы вошли в YouTube.");
+    }
+
+    private void ChooseCookieFile()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Выберите файл cookies.txt с сессией YouTube",
+            Filter = "Файлы cookies (*.txt)|*.txt|Все файлы (*.*)|*.*",
+            CheckFileExists = true
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        try
+        {
+            YoutubeCookies.Read(dialog.FileName);
+            SelectSession(null, dialog.FileName);
+        }
+        catch (InvalidDataException ex) { ShowError(ex.Message); }
+        catch (IOException) { ShowError("Не удалось прочитать файл сессии YouTube."); }
+        catch (UnauthorizedAccessException) { ShowError("Не удалось открыть файл сессии YouTube."); }
+    }
+
+    private void SelectSession(BrowserSession? browser, string? cookieFile)
+    {
+        try
+        {
+            if (browser != _browserSession)
+                BrowserSession.Save(BrowserSession.SettingsPath, browser);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowError("Не удалось сохранить выбор сессии YouTube. Проверьте доступ к настройкам приложения.");
+            return;
+        }
+
+        _browserSession = browser;
+        _youtubeCookiesPath = cookieFile;
+        UpdateSessionStatus();
+    }
+
+    private void UpdateSessionStatus()
+    {
+        SessionStatusTextBlock.Text = _browserSession is { } browser
+            ? $"Профиль {browser.BrowserName} выбран"
+            : "Файл сессии подключён";
+        SessionStatusTextBlock.Visibility = _browserSession is not null || _youtubeCookiesPath is not null
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
     private async void InfoButton_Click(object sender, RoutedEventArgs e)
     {
         var url = GetUrl();
@@ -71,7 +186,8 @@ public partial class MainWindow : Window
         try
         {
             SetBusy(true, "Получаю сведения о видео…");
-            var output = await RunAsync(new[] { "--dump-single-json", "--no-playlist", "--no-warnings", url }, logOutput: false);
+            var output = await RunForUrlAsync(url, new[] { "--dump-single-json", "--no-playlist", "--no-warnings" }, logOutput: false);
+            if (_closeRequested) return;
             using var json = JsonDocument.Parse(output);
             var root = json.RootElement;
             var title = root.TryGetProperty("title", out var t) ? t.GetString() : "Без названия";
@@ -114,8 +230,7 @@ public partial class MainWindow : Window
                 arguments.AddRange(new[] { "-x", "--audio-format", "mp3" });
             else
                 arguments.AddRange(new[] { "-f", "bv*+ba/b" });
-            arguments.Add(url);
-            await RunAsync(arguments, logOutput: true);
+            await RunForUrlAsync(url, arguments, logOutput: true);
             StatusTextBlock.Text = "Готово";
         }
         catch (OperationCanceledException) { StatusTextBlock.Text = "Отменено"; }
@@ -136,7 +251,60 @@ public partial class MainWindow : Window
         finally { SetBusy(false, StatusTextBlock.Text); }
     }
 
-    private async Task<string> RunAsync(IEnumerable<string> arguments, bool logOutput)
+    private async Task<string> RunForUrlAsync(string url, IEnumerable<string> arguments, bool logOutput)
+    {
+        if (!YoutubeCookies.SupportsUrl(url))
+            return await RunAsync(arguments.Append(url), logOutput);
+
+        if (_browserSession is { } browser)
+        {
+            if (!BrowserSession.IsProfile(browser.Browser, browser.ProfilePath))
+                throw new InvalidOperationException("Профиль браузера больше недоступен. Выберите другой профиль в меню «Сессия YouTube».");
+
+            var sessionArguments = new[]
+            {
+                "--ignore-config", "--no-cookies", "--use-extractors", "(?i)^youtube.*$",
+                "--cookies-from-browser", browser.Argument
+            };
+            _usingYoutubeSession = true;
+            try
+            {
+                return await RunAsync(sessionArguments.Concat(arguments).Append(url), logOutput, usingYoutubeSession: true, browser: browser);
+            }
+            finally { _usingYoutubeSession = false; }
+        }
+
+        if (_youtubeCookiesPath is not { } sourcePath)
+            return await RunAsync(arguments.Append(url), logOutput);
+
+        string[] cookies;
+        try { cookies = YoutubeCookies.Read(sourcePath); }
+        catch (IOException) { throw new InvalidOperationException("Файл сессии YouTube недоступен. Отключите сессию и выберите файл заново."); }
+        catch (UnauthorizedAccessException) { throw new InvalidOperationException("Доступ к файлу сессии YouTube закрыт. Отключите сессию и выберите файл заново."); }
+
+        var directory = Directory.CreateTempSubdirectory("youtube-downloader-");
+        var cookiePath = Path.Combine(directory.FullName, "cookies.txt");
+        try
+        {
+            File.WriteAllLines(cookiePath, cookies);
+            _usingYoutubeSession = true;
+            var sessionArguments = new[] { "--no-cookies-from-browser", "--cookies", cookiePath };
+            return await RunAsync(sessionArguments.Concat(arguments).Append(url), logOutput, usingYoutubeSession: true);
+        }
+        finally
+        {
+            _usingYoutubeSession = false;
+            try
+            {
+                File.Delete(cookiePath);
+                directory.Delete();
+            }
+            catch (IOException) { AppendLog("Не удалось удалить временный файл сессии YouTube."); }
+            catch (UnauthorizedAccessException) { AppendLog("Не удалось удалить временный файл сессии YouTube."); }
+        }
+    }
+
+    private async Task<string> RunAsync(IEnumerable<string> arguments, bool logOutput, bool usingYoutubeSession = false, BrowserSession? browser = null)
     {
         var startInfo = new ProcessStartInfo(_ytDlpPath) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true, WorkingDirectory = AppContext.BaseDirectory, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
         foreach (var argument in new[]
@@ -190,12 +358,24 @@ public partial class MainWindow : Window
             throw new OperationCanceledException();
 
         if (process.ExitCode != 0)
-            throw new InvalidOperationException(CreateYtDlpErrorMessage(process.ExitCode, stderr.ToString()));
+            throw new InvalidOperationException(CreateYtDlpErrorMessage(process.ExitCode, stderr.ToString(), usingYoutubeSession, browser));
 
         return stdout.ToString();
     }
 
-    private void CancelButton_Click(object sender, RoutedEventArgs e)
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (e.Cancel || !_usingYoutubeSession) return;
+
+        e.Cancel = true;
+        _closeRequested = true;
+        CancelActiveProcess();
+    }
+
+    private void CancelButton_Click(object sender, RoutedEventArgs e) => CancelActiveProcess();
+
+    private void CancelActiveProcess()
     {
         if (_activeProcess is not { HasExited: false } process) return;
 
@@ -211,7 +391,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string CreateYtDlpErrorMessage(int exitCode, string errorOutput)
+    private static string CreateYtDlpErrorMessage(int exitCode, string errorOutput, bool usingYoutubeSession, BrowserSession? browser)
     {
         var errorLines = errorOutput
             .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -229,8 +409,37 @@ public partial class MainWindow : Window
         if (errorOutput.Contains("timed out", StringComparison.OrdinalIgnoreCase))
             return "YouTube не ответил вовремя. Проверьте подключение к интернету и повторите попытку.";
 
-        if (errorOutput.Contains("sign in", StringComparison.OrdinalIgnoreCase))
-            return "YouTube разрешает доступ к этому видео только после входа в аккаунт. Приложение не использует cookies браузера автоматически.";
+        if (browser is not null &&
+            (errorOutput.Contains("cookie database", StringComparison.OrdinalIgnoreCase) ||
+             errorOutput.Contains("cookies database", StringComparison.OrdinalIgnoreCase) ||
+             errorOutput.Contains("failed to load cookies", StringComparison.OrdinalIgnoreCase) ||
+             errorOutput.Contains("failed to decrypt", StringComparison.OrdinalIgnoreCase)))
+        {
+            return $"Не удалось прочитать сессию из {browser.BrowserName}. Можно выбрать другой браузер или файл cookies.txt в меню «Сессия YouTube».";
+        }
+
+        if (errorLines.Any(line => line.Contains("[youtube", StringComparison.OrdinalIgnoreCase) &&
+                                   line.Contains("confirm you", StringComparison.OrdinalIgnoreCase) &&
+                                   line.Contains("not a bot", StringComparison.OrdinalIgnoreCase)))
+        {
+            if (browser is not null)
+                return $"YouTube запросил проверку «вы не бот». Откройте ролик в выбранном профиле {browser.BrowserName} и убедитесь, что вошли в аккаунт.";
+
+            return usingYoutubeSession
+                ? "YouTube запросил проверку «вы не бот», хотя файл сессии подключён. Проверьте доступ в браузере или выберите свежий файл cookies.txt."
+                : "YouTube запросил проверку «вы не бот». Выберите браузер, в котором вы вошли в аккаунт, в меню «Сессия YouTube».";
+        }
+
+        if (errorOutput.Contains("sign in", StringComparison.OrdinalIgnoreCase) &&
+            errorOutput.Contains("[youtube", StringComparison.OrdinalIgnoreCase))
+        {
+            if (browser is not null)
+                return $"YouTube запросил вход. Проверьте доступ к ролику в выбранном профиле {browser.BrowserName}.";
+
+            return usingYoutubeSession
+                ? "YouTube запросил вход. Проверьте, что видео доступно этому аккаунту, и при необходимости выберите свежий файл cookies.txt."
+                : "YouTube запросил вход. Подключите сессию YouTube, если ролик доступен вашему аккаунту.";
+        }
 
         if (errorOutput.Contains("video is not available", StringComparison.OrdinalIgnoreCase) ||
             errorOutput.Contains("video unavailable", StringComparison.OrdinalIgnoreCase))
@@ -259,8 +468,10 @@ public partial class MainWindow : Window
     private void SetBusy(bool busy, string status)
     {
         InfoButton.IsEnabled = !busy; DownloadButton.IsEnabled = !busy; AudioButton.IsEnabled = !busy; UpdateButton.IsEnabled = !busy; CancelButton.IsEnabled = busy;
+        SessionButton.IsEnabled = !busy;
         StatusTextBlock.Text = status;
         ActivityProgressBar.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        if (!busy && _closeRequested) Close();
     }
 
     private async Task LoadThumbnailAsync(string thumbnailUrl)
@@ -284,5 +495,11 @@ public partial class MainWindow : Window
     }
 
     private void AppendLog(string text) => Dispatcher.Invoke(() => { LogTextBox.AppendText(text + Environment.NewLine); LogTextBox.ScrollToEnd(); });
-    private void ShowError(string message) { StatusTextBlock.Text = "Ошибка"; AppendLog(message); System.Windows.MessageBox.Show(message, "YouTube Downloader", MessageBoxButton.OK, MessageBoxImage.Error); }
+    private void ShowError(string message)
+    {
+        if (_closeRequested) return;
+        StatusTextBlock.Text = "Ошибка";
+        AppendLog(message);
+        System.Windows.MessageBox.Show(message, "YouTube Downloader", MessageBoxButton.OK, MessageBoxImage.Error);
+    }
 }

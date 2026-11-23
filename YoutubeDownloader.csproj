@@ -10,7 +10,7 @@
     <Optimize>true</Optimize>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <AssemblyName>YoutubeDownloader</AssemblyName>
-    <Version>1.0.16</Version>
+    <Version>1.0.20</Version>
     <ApplicationIcon>YouTube.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>

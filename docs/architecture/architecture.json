@@ -3,6 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Архитектура YouTube Downloader",
+    "output": "docs/architecture/architecture.html",
     "quality_profile": "showcase",
     "viewBox": [1120, 700],
     "repository": {
@@ -15,7 +16,7 @@
       "id": "user",
       "type": "external",
       "label": "Пользователь",
-      "sublabel": "URL и папка загрузки",
+      "sublabel": "URL, папка, сессия",
       "pos": [36, 270],
       "size": [150, 72]
     },
@@ -47,7 +48,7 @@
       "type": "backend",
       "label": "Локальные инструменты",
       "sublabel": "yt-dlp, Deno, FFmpeg",
-      "tag": "без cookies",
+      "tag": "сессия по выбору",
       "sources": [
         { "path": "scripts/Get-Dependencies.ps1", "label": "Получение инструментов" }
       ],
@@ -99,7 +100,7 @@
       "id": "orchestratorToTools",
       "from": "orchestrator",
       "to": "localTools",
-      "label": "аргументы, stderr и JS runtime",
+      "label": "аргументы и источник сессии",
       "labelDy": -30
     },
     {
@@ -123,7 +124,9 @@
       "title": "Граница ответственности",
       "items": [
         "WPF управляет состоянием и отображает журнал",
-        "yt-dlp извлекает форматы, Deno решает JS-челленджи, FFmpeg объединяет потоки"
+        "yt-dlp извлекает форматы, Deno решает JS-челленджи, FFmpeg объединяет потоки",
+        "Оркестратор передаёт выбранный профиль браузера или временную копию cookies YouTube",
+        "В локальных настройках хранятся имя браузера и путь выбранного профиля"
       ]
     },
     {
