@@ -1,6 +1,5 @@
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace YoutubeDownloader;
 
@@ -11,50 +10,9 @@ internal sealed record BrowserSession(string Browser, string ProfilePath)
     public static IReadOnlyList<(string Id, string Name)> Browsers { get; } =
         new[] { ("firefox", "Firefox"), ("chrome", "Google Chrome"), ("edge", "Microsoft Edge") };
 
-    public static string SettingsPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "YoutubeDownloader", "browser-session.json");
-
-    [JsonIgnore]
     public string BrowserName => Browsers.First(browser => browser.Id == Browser).Name;
 
-    [JsonIgnore]
     public string Argument => $"{Browser}:{ProfilePath}";
-
-    public static BrowserSession? Load(string path)
-    {
-        try
-        {
-            var session = JsonSerializer.Deserialize<BrowserSession>(File.ReadAllText(path));
-            return session is not null &&
-                   Browsers.Any(browser => browser.Id == session.Browser) &&
-                   Path.IsPathFullyQualified(session.ProfilePath ?? string.Empty) ? session : null;
-        }
-        catch (IOException) { return null; }
-        catch (UnauthorizedAccessException) { return null; }
-        catch (JsonException) { return null; }
-    }
-
-    public static void Save(string path, BrowserSession? session)
-    {
-        if (session is null)
-        {
-            File.Delete(path);
-            return;
-        }
-
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
-        try
-        {
-            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(session));
-            File.Move(temporaryPath, path, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(temporaryPath);
-        }
-    }
 
     public static string GetProfileRoot(string browser)
     {

@@ -38,7 +38,7 @@ public partial class MainWindow : Window
         _ytDlpPath = Path.Combine(_toolsDirectory, "yt-dlp.exe");
         _denoPath = Path.Combine(_toolsDirectory, "deno.exe");
         FolderTextBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-        _browserSession = BrowserSession.Load(BrowserSession.SettingsPath);
+        (_browserSession, _youtubeCookiesPath) = YoutubeSessionSettings.Load(YoutubeSessionSettings.SettingsPath);
         UpdateSessionStatus();
     }
 
@@ -154,8 +154,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (browser != _browserSession)
-                BrowserSession.Save(BrowserSession.SettingsPath, browser);
+            YoutubeSessionSettings.Save(YoutubeSessionSettings.SettingsPath, browser, cookieFile);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -172,7 +171,9 @@ public partial class MainWindow : Window
     {
         SessionStatusTextBlock.Text = _browserSession is { } browser
             ? $"Профиль {browser.BrowserName} выбран"
-            : "Файл сессии подключён";
+            : _youtubeCookiesPath is { } path && !File.Exists(path)
+                ? "Файл сессии недоступен"
+                : "Файл сессии подключён";
         SessionStatusTextBlock.Visibility = _browserSession is not null || _youtubeCookiesPath is not null
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -279,8 +280,8 @@ public partial class MainWindow : Window
 
         string[] cookies;
         try { cookies = YoutubeCookies.Read(sourcePath); }
-        catch (IOException) { throw new InvalidOperationException("Файл сессии YouTube недоступен. Отключите сессию и выберите файл заново."); }
-        catch (UnauthorizedAccessException) { throw new InvalidOperationException("Доступ к файлу сессии YouTube закрыт. Отключите сессию и выберите файл заново."); }
+        catch (IOException) { throw new InvalidOperationException("Файл сессии YouTube недоступен. Выберите файл заново в меню «Сессия YouTube»."); }
+        catch (UnauthorizedAccessException) { throw new InvalidOperationException("Доступ к файлу сессии YouTube закрыт. Выберите файл заново в меню «Сессия YouTube»."); }
 
         var directory = Directory.CreateTempSubdirectory("youtube-downloader-");
         var cookiePath = Path.Combine(directory.FullName, "cookies.txt");
